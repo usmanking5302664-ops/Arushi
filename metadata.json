@@ -1,0 +1,6 @@
+{
+  "name": "Arushi",
+  "description": "Multilingual AI voice assistant with real Android device actions, contact calling, app control, and function calling.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
