@@ -16,11 +16,14 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Message
+import androidx.compose.material.icons.automirrored.filled.VolumeUp
 import androidx.compose.material.icons.filled.Call
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Error
+import androidx.compose.material.icons.filled.GetApp
 import androidx.compose.material.icons.filled.Link
+import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.Phone
 import androidx.compose.material.icons.filled.PhoneInTalk
 import androidx.compose.material.icons.filled.SmartButton
@@ -129,6 +132,10 @@ private fun getActionIcon(actionType: String): ImageVector {
         "callContact" -> Icons.Default.PhoneInTalk
         "openUrl" -> Icons.Default.Link
         "openApp" -> Icons.Default.SmartButton
+        "adjustVolume" -> Icons.AutoMirrored.Filled.VolumeUp
+        "installApp" -> Icons.Default.GetApp
+        "playMusic" -> Icons.Default.MusicNote
+        "controlMedia" -> Icons.Default.MusicNote
         else -> Icons.Default.CheckCircle
     }
 }
@@ -141,6 +148,10 @@ private fun getActionHeader(actionType: String, success: Boolean): String {
         "callContact" -> "Contact Calling"
         "openUrl" -> "Browser Link"
         "openApp" -> "App Control"
+        "adjustVolume" -> "Volume Adjustment"
+        "installApp" -> "Play Store Install"
+        "playMusic" -> "Music Playback"
+        "controlMedia" -> "Media Playback Control"
         else -> "Device Action"
     }
     return "$actionName: $status"

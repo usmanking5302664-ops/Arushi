@@ -8,8 +8,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Message
+import androidx.compose.material.icons.automirrored.filled.VolumeUp
 import androidx.compose.material.icons.filled.Call
+import androidx.compose.material.icons.filled.GetApp
 import androidx.compose.material.icons.filled.Language
+import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.SmartButton
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.AssistChipDefaults
@@ -35,8 +38,14 @@ fun QuickPromptsRow(
     modifier: Modifier = Modifier
 ) {
     val prompts = listOf(
+        QuickPrompt("Arushi, turn the volume up", Icons.AutoMirrored.Filled.VolumeUp, "volume_up"),
+        QuickPrompt("Play music on YouTube", Icons.Default.MusicNote, "play_music_youtube"),
+        QuickPrompt("Pause music on YouTube", Icons.Default.MusicNote, "pause_music_youtube"),
+        QuickPrompt("Skip song", Icons.Default.MusicNote, "skip_song"),
+        QuickPrompt("Install WhatsApp from Play Store", Icons.Default.GetApp, "install_play_store"),
         QuickPrompt("WhatsApp kholo", Icons.AutoMirrored.Filled.Message, "whatsapp_kholo"),
         QuickPrompt("Open WhatsApp", Icons.AutoMirrored.Filled.Message, "open_whatsapp"),
+        QuickPrompt("Turn volume down", Icons.AutoMirrored.Filled.VolumeUp, "volume_down"),
         QuickPrompt("Call Usman", Icons.Default.Call, "call_usman"),
         QuickPrompt("Mummy ko call karo", Icons.Default.Call, "call_mummy"),
         QuickPrompt("Call 9876543210", Icons.Default.Call, "call_number"),

@@ -74,6 +74,58 @@ class AndroidBridge(
     }
 
     @JavascriptInterface
+    fun adjustVolume(direction: String, streamType: String? = "media", levelPercent: Int = -1): String {
+        val lvl = if (levelPercent in 0..100) levelPercent else null
+        val result = actionManager.adjustVolume(direction, streamType, lvl)
+        onActionExecuted?.invoke("adjustVolume($direction, $streamType)", result.success, result.message)
+        return JSONObject().apply {
+            put("success", result.success)
+            put("action", "adjustVolume")
+            put("message", result.message)
+        }.toString()
+    }
+
+    @JavascriptInterface
+    fun installApp(packageNameOrAppName: String): String {
+        val result = actionManager.installApp(packageNameOrAppName)
+        val resolvedPackage = actionManager.resolvePackageName(packageNameOrAppName)
+        onActionExecuted?.invoke("installApp($packageNameOrAppName)", result.success, result.message)
+        return JSONObject().apply {
+            put("success", result.success)
+            put("action", "installApp")
+            put("target", packageNameOrAppName)
+            put("packageName", resolvedPackage)
+            put("uri", "market://details?id=$resolvedPackage")
+            put("message", result.message)
+        }.toString()
+    }
+
+    @JavascriptInterface
+    fun playMusic(query: String, platform: String? = "youtube"): String {
+        val result = actionManager.playMusic(query, platform)
+        onActionExecuted?.invoke("playMusic($query, $platform)", result.success, result.message)
+        return JSONObject().apply {
+            put("success", result.success)
+            put("action", "playMusic")
+            put("message", result.message)
+        }.toString()
+    }
+
+    @JavascriptInterface
+    @JvmOverloads
+    fun controlMedia(command: String, targetApp: String? = null): String {
+        val result = actionManager.controlMedia(command, targetApp)
+        onActionExecuted?.invoke("controlMedia($command, ${targetApp ?: "all"})", result.success, result.message)
+        return JSONObject().apply {
+            put("success", result.success)
+            put("action", "controlMedia")
+            put("command", command)
+            put("targetApp", targetApp ?: "media")
+            put("message", result.message)
+        }.toString()
+    }
+
+    @JavascriptInterface
     fun isNativeBridgeAvailable(): Boolean {
         return true
     }

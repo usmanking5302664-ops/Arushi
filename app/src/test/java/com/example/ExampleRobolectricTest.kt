@@ -95,5 +95,93 @@ class ExampleRobolectricTest {
 
     val appJson = JSONObject(bridge.openApp("YouTube"))
     assertEquals("openApp", appJson.getString("action"))
+
+    val volJson = JSONObject(bridge.adjustVolume("up"))
+    assertTrue(volJson.getBoolean("success"))
+    assertEquals("adjustVolume", volJson.getString("action"))
+
+    val installJson = JSONObject(bridge.installApp("WhatsApp"))
+    assertTrue(installJson.getBoolean("success"))
+    assertEquals("installApp", installJson.getString("action"))
+    assertEquals("com.whatsapp", installJson.getString("packageName"))
+    assertEquals("market://details?id=com.whatsapp", installJson.getString("uri"))
+
+    val installPackageJson = JSONObject(bridge.installApp("org.telegram.messenger"))
+    assertTrue(installPackageJson.getBoolean("success"))
+    assertEquals("org.telegram.messenger", installPackageJson.getString("packageName"))
+    assertEquals("market://details?id=org.telegram.messenger", installPackageJson.getString("uri"))
+
+    val musicJson = JSONObject(bridge.playMusic("Top hits", "youtube"))
+    assertTrue(musicJson.getBoolean("success"))
+    assertEquals("playMusic", musicJson.getString("action"))
+
+    val controlJson = JSONObject(bridge.controlMedia("play", "youtube"))
+    assertTrue(controlJson.getBoolean("success"))
+    assertEquals("controlMedia", controlJson.getString("action"))
+    assertEquals("play", controlJson.getString("command"))
+    assertEquals("youtube", controlJson.getString("targetApp"))
+  }
+
+  @Test
+  fun `action manager controls media with play pause and skip commands`() {
+    val playResult = actionManager.controlMedia("play", "youtube")
+    assertTrue(playResult.success)
+    assertEquals("controlMedia", playResult.actionType)
+    assertTrue(playResult.message.contains("YouTube"))
+
+    val pauseResult = actionManager.controlMedia("pause")
+    assertTrue(pauseResult.success)
+    assertEquals("controlMedia", pauseResult.actionType)
+    assertTrue(pauseResult.message.contains("Paused"))
+
+    val skipResult = actionManager.controlMedia("skip", "com.spotify.music")
+    assertTrue(skipResult.success)
+    assertEquals("controlMedia", skipResult.actionType)
+    assertTrue(skipResult.message.contains("Skipped") || skipResult.message.contains("media button"))
+  }
+
+  @Test
+  fun `installApp deep links directly to Play Store install page using market details URI`() {
+    val result = actionManager.installApp("com.instagram.android")
+    assertTrue(result.success)
+    assertEquals("installApp", result.actionType)
+    assertTrue(result.message.contains("market") || result.message.contains("Play Store"))
+
+    val resolved = actionManager.resolvePackageName("com.instagram.android")
+    assertEquals("com.instagram.android", resolved)
+
+    val resolvedNamed = actionManager.resolvePackageName("WhatsApp")
+    assertEquals("com.whatsapp", resolvedNamed)
+  }
+
+  @Test
+  fun `action manager adjusts volume up and down`() {
+    val upResult = actionManager.adjustVolume("up", "media")
+    assertTrue(upResult.success)
+    assertEquals("adjustVolume", upResult.actionType)
+
+    val downResult = actionManager.adjustVolume("down", "media")
+    assertTrue(downResult.success)
+    assertEquals("adjustVolume", downResult.actionType)
+
+    val muteResult = actionManager.adjustVolume("mute", "media")
+    assertTrue(muteResult.success)
+    assertEquals("adjustVolume", muteResult.actionType)
+  }
+
+  @Test
+  fun `action manager installs app from play store`() {
+    val result = actionManager.installApp("WhatsApp")
+    assertTrue(result.success)
+    assertEquals("installApp", result.actionType)
+    assertTrue(result.message.contains("Play Store"))
+  }
+
+  @Test
+  fun `action manager plays music on youtube`() {
+    val result = actionManager.playMusic("Arijit Singh hits", "youtube")
+    assertTrue(result.success)
+    assertEquals("playMusic", result.actionType)
+    assertTrue(result.message.contains("YouTube"))
   }
 }

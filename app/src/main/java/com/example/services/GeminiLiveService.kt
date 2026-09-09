@@ -52,6 +52,10 @@ class GeminiLiveService(
         3. When user asks to make a call to a number ('Call 9876543210'): call makeCall(phoneNumber).
         4. When user asks to call a person or contact ('Call Mom', 'Call Mummy', 'Call Usman', 'Call Dad', 'Mummy ko call karo', 'Usman ko phone lagao'): call callContact(contactName).
         5. When user asks to open a website URL: call openUrl(url).
+        6. When user asks to adjust volume ('turn the volume up', 'turn volume down', 'volume badhao', 'volume kam karo', 'mute', 'set volume to 80%'): call adjustVolume(direction, streamType, levelPercent).
+        7. When user asks to install an app from Play Store ('install app from play store', 'install WhatsApp from play store', 'play store se app install karo'): call installApp(appName).
+        8. When user asks to play music or songs ('play music on YouTube', 'play song on YouTube', 'youtube par gaana bajao'): call playMusic(query, platform).
+        9. When user asks to control media playback ('pause music', 'resume music', 'skip song', 'next track', 'stop music', 'gaana roko', 'agla gaana', 'pause YouTube'): call controlMedia(command, targetApp).
         
         DO NOT pretend you performed an action without calling the tool.
         After receiving the tool execution result, provide a warm, natural verbal confirmation in the language of the conversation.
@@ -209,6 +213,28 @@ class GeminiLiveService(
                 val url = args.optString("url", "https://google.com")
                 actionManager.openUrl(url)
             }
+            "adjustVolume" -> {
+                val direction = args.optString("direction", "up")
+                val streamType = args.optString("streamType", "media")
+                val levelPercent = if (args.has("levelPercent")) args.getInt("levelPercent") else null
+                actionManager.adjustVolume(direction, streamType, levelPercent)
+            }
+            "installApp" -> {
+                val appTarget = args.optString("packageName", "").ifBlank {
+                    args.optString("appName", "")
+                }
+                actionManager.installApp(appTarget)
+            }
+            "playMusic" -> {
+                val query = args.optString("query", "Top music hits")
+                val platform = args.optString("platform", "youtube")
+                actionManager.playMusic(query, platform)
+            }
+            "controlMedia" -> {
+                val command = args.optString("command", "play")
+                val targetApp = if (args.has("targetApp")) args.optString("targetApp") else null
+                actionManager.controlMedia(command, targetApp)
+            }
             else -> ActionResult(false, name, "Unsupported action: $name")
         }
     }
@@ -328,6 +354,123 @@ class GeminiLiveService(
                 action.message
             }
             return GeminiResult(text = speechText, executedAction = action)
+        }
+
+        // Volume adjustment: "Arushi, turn the volume up", "volume down", "volume badhao", "mute"
+        if (lower.contains("volume") || lower.contains("awaaz") || lower.contains("sound") || lower == "mute" || lower == "unmute") {
+            val direction = when {
+                lower.contains("up") || lower.contains("raise") || lower.contains("increase") || lower.contains("louder") || lower.contains("badhao") -> "up"
+                lower.contains("down") || lower.contains("lower") || lower.contains("decrease") || lower.contains("softer") || lower.contains("kam") -> "down"
+                lower.contains("mute") || lower.contains("silent") || lower.contains("shant") -> "mute"
+                lower.contains("unmute") || lower.contains("full") || lower.contains("max") -> "unmute"
+                else -> "up"
+            }
+            val streamType = if (lower.contains("ringer") || lower.contains("ring")) "ringer" else "media"
+            val pctMatch = Regex("(\\d{1,3})\\s*%").find(lower)
+            val levelPercent = pctMatch?.groupValues?.get(1)?.toIntOrNull()
+
+            onActionStarted?.invoke("adjustVolume")
+            val action = actionManager.adjustVolume(direction, streamType, levelPercent)
+            val speech = if (currentLanguage == "hi-IN") {
+                if (direction == "up") "Awaaz badha di gayi hai." else if (direction == "down") "Awaaz kam kar di gayi hai." else action.message
+            } else {
+                action.message
+            }
+            return GeminiResult(text = speech, executedAction = action)
+        }
+
+        // Install app from Play Store: "arushi install the app from play store", "install WhatsApp from play store"
+        if (lower.contains("install") || lower.contains("play store se") || (lower.contains("play store") && (lower.contains("app") || lower.contains("download")))) {
+            val appTarget = lower
+                .replace(Regex("\\b(arushi|the app|from the play store|from play store|play store se|install karo|install|download karo|download|play store|store)\\b"), " ")
+                .replace(Regex("\\bapp\\b"), " ")
+                .replace("\\s+".toRegex(), " ")
+                .trim()
+                .ifBlank { "WhatsApp" }
+            onActionStarted?.invoke("installApp")
+            val action = actionManager.installApp(appTarget)
+            val reply = if (currentLanguage == "hi-IN") {
+                "Google Play Store khol diya hai '$appTarget' install karne ke liye."
+            } else {
+                "Opening Google Play Store to install '$appTarget'."
+            }
+            return GeminiResult(text = reply, executedAction = action)
+        }
+
+        // Media playback controls: pause, resume, skip, next, stop, etc.
+        val isMediaControl = lower.contains("pause") ||
+                lower.contains("resume") ||
+                lower.contains("skip") ||
+                lower.contains("next song") ||
+                lower.contains("next track") ||
+                lower.contains("agla gaana") ||
+                lower.contains("stop music") ||
+                lower.contains("stop song") ||
+                lower.contains("gaana roko") ||
+                lower.contains("gaana band") ||
+                lower.contains("control media") ||
+                (lower.contains("media") && (lower.contains("play") || lower.contains("pause") || lower.contains("button")))
+
+        if (isMediaControl) {
+            val command = when {
+                lower.contains("pause") || lower.contains("roko") -> "pause"
+                lower.contains("resume") || lower.contains("chalao") -> "play"
+                lower.contains("skip") || lower.contains("next") || lower.contains("agla") -> "skip"
+                lower.contains("previous") || lower.contains("prev") || lower.contains("pichla") -> "previous"
+                lower.contains("stop") || lower.contains("band") -> "stop"
+                else -> "play"
+            }
+            val targetApp = when {
+                lower.contains("youtube") -> "youtube"
+                lower.contains("spotify") -> "spotify"
+                else -> null
+            }
+
+            onActionStarted?.invoke("controlMedia")
+            val action = actionManager.controlMedia(command, targetApp)
+            val reply = if (currentLanguage == "hi-IN") {
+                when (command) {
+                    "pause" -> "Gaana pause kar diya gaya hai."
+                    "play" -> "Music play kar diya gaya hai."
+                    "skip" -> "Agla gaana chala diya gaya hai."
+                    "stop" -> "Music band kar diya gaya hai."
+                    else -> action.message
+                }
+            } else {
+                action.message
+            }
+            return GeminiResult(text = reply, executedAction = action)
+        }
+
+        // Play music or song: "arushi play music on YouTube", "play song on youtube", "gaana chalao"
+        if ((lower.contains("play") && (lower.contains("music") || lower.contains("song") || lower.contains("track") || lower.contains("youtube") || lower.contains("spotify"))) ||
+            lower.contains("gaana") || lower.contains("gana") || lower.contains("suno") || lower.contains("bajao")) {
+            val platform = if (lower.contains("spotify")) "spotify" else "youtube"
+            var songQuery = lower
+                .replace("arushi", "")
+                .replace("play music on youtube", "")
+                .replace("play song on youtube", "")
+                .replace("play music", "")
+                .replace("play song", "")
+                .replace("play", "")
+                .replace("on youtube", "")
+                .replace("on spotify", "")
+                .replace("youtube par", "")
+                .replace("gaana chalao", "")
+                .replace("gaana bajao", "")
+                .replace("gana bajao", "")
+                .trim()
+            if (songQuery.isBlank()) {
+                songQuery = "Top trending music"
+            }
+            onActionStarted?.invoke("playMusic")
+            val action = actionManager.playMusic(songQuery, platform)
+            val reply = if (currentLanguage == "hi-IN") {
+                "YouTube par gaana chala diya hai: $songQuery."
+            } else {
+                "Playing '$songQuery' on YouTube."
+            }
+            return GeminiResult(text = reply, executedAction = action)
         }
 
         // Open specific apps: YouTube, Instagram, Chrome, Settings, etc.
@@ -518,6 +661,82 @@ class GeminiLiveService(
                         })
                     })
                     put("required", JSONArray().apply { put("url") })
+                })
+            })
+            // 6. adjustVolume
+            put(JSONObject().apply {
+                put("name", "adjustVolume")
+                put("description", "Adjusts the device media or ringer volume up, down, mute, unmute, or sets to specific percentage.")
+                put("parameters", JSONObject().apply {
+                    put("type", "OBJECT")
+                    put("properties", JSONObject().apply {
+                        put("direction", JSONObject().apply {
+                            put("type", "STRING")
+                            put("description", "Direction to change volume: 'up', 'down', 'mute', 'unmute'")
+                        })
+                        put("streamType", JSONObject().apply {
+                            put("type", "STRING")
+                            put("description", "Audio stream type: 'media', 'ringer', 'alarm', 'notification'")
+                        })
+                        put("levelPercent", JSONObject().apply {
+                            put("type", "INTEGER")
+                            put("description", "Optional target volume level from 0 to 100 percent")
+                        })
+                    })
+                    put("required", JSONArray().apply { put("direction") })
+                })
+            })
+            // 7. installApp
+            put(JSONObject().apply {
+                put("name", "installApp")
+                put("description", "Uses an ACTION_VIEW Intent with the Google Play Store URI scheme (market://details?id=<package>) to deep-link users directly to app install pages.")
+                put("parameters", JSONObject().apply {
+                    put("type", "OBJECT")
+                    put("properties", JSONObject().apply {
+                        put("packageName", JSONObject().apply {
+                            put("type", "STRING")
+                            put("description", "Package name (e.g. 'com.whatsapp', 'com.instagram.android') or app name to install")
+                        })
+                    })
+                    put("required", JSONArray().apply { put("packageName") })
+                })
+            })
+            // 8. playMusic
+            put(JSONObject().apply {
+                put("name", "playMusic")
+                put("description", "Plays song or music on YouTube (or Spotify) matching the user's request.")
+                put("parameters", JSONObject().apply {
+                    put("type", "OBJECT")
+                    put("properties", JSONObject().apply {
+                        put("query", JSONObject().apply {
+                            put("type", "STRING")
+                            put("description", "Song name, artist, or music genre to play, e.g. 'Top hits', 'Arijit Singh songs'")
+                        })
+                        put("platform", JSONObject().apply {
+                            put("type", "STRING")
+                            put("description", "Platform to play music on: 'youtube' or 'spotify'")
+                        })
+                    })
+                    put("required", JSONArray().apply { put("query") })
+                })
+            })
+            // 9. controlMedia
+            put(JSONObject().apply {
+                put("name", "controlMedia")
+                put("description", "Controls media playback (play, pause, stop, skip/next, previous) using media button intents on apps like YouTube, Spotify, or default media player.")
+                put("parameters", JSONObject().apply {
+                    put("type", "OBJECT")
+                    put("properties", JSONObject().apply {
+                        put("command", JSONObject().apply {
+                            put("type", "STRING")
+                            put("description", "Media control action: 'play', 'pause', 'stop', 'skip', 'next', 'previous'")
+                        })
+                        put("targetApp", JSONObject().apply {
+                            put("type", "STRING")
+                            put("description", "Optional target application such as 'youtube', 'spotify', or package name")
+                        })
+                    })
+                    put("required", JSONArray().apply { put("command") })
                 })
             })
         }

@@ -151,6 +151,54 @@ fun BridgeDebugSheet(
                 onTest = { actionManager.openApp("YouTube") }
             )
 
+            Spacer(modifier = Modifier.height(8.dp))
+
+            BridgeFunctionCard(
+                name = "adjustVolume(\"up\")",
+                description = "Adjusts device media/ringer volume up or down",
+                onTest = { actionManager.adjustVolume("up") }
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            BridgeFunctionCard(
+                name = "installApp(\"com.whatsapp\")",
+                description = "Deep-links via ACTION_VIEW market://details?id= directly to Play Store install page",
+                onTest = { actionManager.installApp("com.whatsapp") }
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            BridgeFunctionCard(
+                name = "playMusic(\"Top trending music\")",
+                description = "Launches YouTube playback search intent",
+                onTest = { actionManager.playMusic("Top trending music") }
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            BridgeFunctionCard(
+                name = "controlMedia(\"play\", \"youtube\")",
+                description = "Triggers playback on YouTube via media button intents",
+                onTest = { actionManager.controlMedia("play", "youtube") }
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            BridgeFunctionCard(
+                name = "controlMedia(\"pause\")",
+                description = "Dispatches pause media button intent to active player",
+                onTest = { actionManager.controlMedia("pause") }
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            BridgeFunctionCard(
+                name = "controlMedia(\"skip\")",
+                description = "Dispatches next track media button intent",
+                onTest = { actionManager.controlMedia("skip") }
+            )
+
             Spacer(modifier = Modifier.height(24.dp))
         }
     }
